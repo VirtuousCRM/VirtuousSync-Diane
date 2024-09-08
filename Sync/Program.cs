@@ -1,5 +1,6 @@
 ﻿using CsvHelper;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -25,20 +26,23 @@ namespace Sync
             var maxContacts = 1000;
             var hasMore = true;
             var filteredState = "AZ";
+            var filteredRecords = new List<AbbreviatedContact>();
 
-            using (var writer = new StreamWriter($"Contacts_{DateTime.Now:MM_dd_yyyy}.csv"))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            //get the records and keep a filtered list for the state of AZ
+            do
             {
-                do
-                {
-                    var contacts = await virtuousService.GetContactsAsync(skip, take);
-                    skip += take;
-                    var listForState = contacts.List.Where(c => c.Address.Contains(filteredState)).ToList();
-                    csv.WriteRecords(listForState);
-                    hasMore = skip > maxContacts;
-                }
-                while (!hasMore);
+                var contacts = await virtuousService.GetContactsAsync(skip, take);
+                skip += take;
+                var listForState = contacts.List.Where(c => c.Address.Contains(filteredState)).ToList();
+                filteredRecords.AddRange(listForState);
+                hasMore = skip > maxContacts;
             }
+            while (!hasMore);
+            
+            //add the result to a database.
+            //this will work once a database and a table have been created for the results. 
+            var dbClass = new ContactsDatabase();
+            dbClass.CreateContacts(filteredRecords);
         }
     }
 }
