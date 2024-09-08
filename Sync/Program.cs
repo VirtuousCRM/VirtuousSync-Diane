@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sync
@@ -23,6 +24,7 @@ namespace Sync
             var take = 100;
             var maxContacts = 1000;
             var hasMore = true;
+            var filteredState = "AZ";
 
             using (var writer = new StreamWriter($"Contacts_{DateTime.Now:MM_dd_yyyy}.csv"))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
@@ -31,7 +33,8 @@ namespace Sync
                 {
                     var contacts = await virtuousService.GetContactsAsync(skip, take);
                     skip += take;
-                    csv.WriteRecords(contacts.List);
+                    var listForState = contacts.List.Where(c => c.Address.Contains(filteredState)).ToList();
+                    csv.WriteRecords(listForState);
                     hasMore = skip > maxContacts;
                 }
                 while (!hasMore);
